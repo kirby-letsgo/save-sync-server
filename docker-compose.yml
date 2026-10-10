@@ -1,3 +1,5 @@
+# The database is still named oracles_sync: the running deployment's db-data volume holds it under
+# that name, and renaming it here would hand the server an empty database.
 services:
   api:
     build: .
@@ -8,6 +10,7 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - TRUST_PROXY=true
+      - SYNC_PROFILE=${SYNC_PROFILE:-oracles}
     depends_on:
       db:
         condition: service_healthy

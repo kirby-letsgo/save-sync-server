@@ -1,8 +1,8 @@
 {
-  "name": "oracles-sync-server",
+  "name": "save-sync-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Save sync for Oracles: an account is a random sync code, no passwords",
+  "description": "Save sync for small apps: an account is a random sync code, no passwords. What may be synced is a profile (src/profiles/).",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "local": "tsx scripts/local.ts",
+    "image:test": "docker build --target test -t save-sync-server:test .",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

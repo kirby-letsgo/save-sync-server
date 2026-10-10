@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      # The image a client app's end-to-end tests pin, so a broken one fails here and not there.
+      - run: pnpm image:test
+      - name: The test image serves /health
+        run: |
+          id=$(docker run --rm -d -p 3000:3000 save-sync-server:test)
+          trap 'docker logs "$id"; docker stop "$id" >/dev/null' EXIT
+          for i in $(seq 30); do
+            curl -fsS http://127.0.0.1:3000/health && exit 0
+            sleep 1
+          done
+          echo 'the test image never answered /health'; exit 1

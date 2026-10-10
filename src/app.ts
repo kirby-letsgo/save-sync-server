@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { formatCode, newCode, normalizeCode } from './codes.js';
 import type { Db } from './db/index.js';
 import { accounts, files } from './db/schema.js';
-import { KEEP_VERSIONS, MAX_FILE_BYTES, allowedFile, needsFormatVersion } from './files.js';
+import { type Profile, allowedFile } from './profile.js';
+import { loadProfile } from './profiles/index.js';
 
 export interface Limits {
   requestsPerMinute: number; // per address, every route
@@ -24,6 +25,8 @@ export interface AppOptions {
   db: Db;
   logger?: boolean;
   limits?: Partial<Limits>;
+  // What this server is allowed to sync; SYNC_PROFILE by default.
+  profile?: Profile;
   // Behind a reverse proxy (Coolify's Traefik) the client address comes from X-Forwarded-For;
   // without this every request would share the proxy's address, and its limits.
   trustProxy?: boolean;
@@ -51,10 +54,11 @@ export async function buildApp({
   db,
   logger = false,
   limits = {},
+  profile = loadProfile(),
   trustProxy = false,
 }: AppOptions): Promise<FastifyInstance> {
   const limit = { ...DEFAULT_LIMITS, ...limits };
-  const app = Fastify({ logger, bodyLimit: MAX_FILE_BYTES, trustProxy });
+  const app = Fastify({ logger, bodyLimit: profile.maxFileBytes, trustProxy });
   await app.register(rateLimit, { max: limit.requestsPerMinute, timeWindow: '1 minute' });
   app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) =>
     done(null, body),
@@ -148,13 +152,13 @@ export async function buildApp({
     },
     async (req, reply) => {
       const { code, game, name } = fileParams.parse(req.params);
-      if (!allowedFile(game, name))
+      if (!allowedFile(profile, game, name))
         return reply.code(400).send({ error: 'this file is not synced' });
       if (!Buffer.isBuffer(req.body)) {
         return reply.code(415).send({ error: 'send the file as application/octet-stream' });
       }
       const headers = uploadHeaders.parse(req.headers);
-      if (needsFormatVersion(name) && headers['x-format-version'] === undefined) {
+      if (profile.needsFormatVersion(name) && headers['x-format-version'] === undefined) {
         return reply.code(400).send({ error: 'save states need x-format-version' });
       }
       const account = await findAccount(code);
@@ -186,7 +190,9 @@ export async function buildApp({
           device: headers['x-device'] ?? null,
           formatVersion: headers['x-format-version'] ?? null,
         });
-        await tx.delete(files).where(and(same, lt(files.version, version - KEEP_VERSIONS + 1)));
+        await tx
+          .delete(files)
+          .where(and(same, lt(files.version, version - profile.keepVersions + 1)));
         return { version, created: true };
       });
       if ('conflict' in result) {

@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { migrationsFolder } from '../src/db/index.js';
 import * as schema from '../src/db/schema.js';
-import { KEEP_VERSIONS } from '../src/files.js';
+import { oracles } from '../src/profiles/oracles.js';
+
+const KEEP_VERSIONS = oracles.keepVersions;
 
 let app: FastifyInstance;
 

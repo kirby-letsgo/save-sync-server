@@ -13,4 +13,9 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     void app.close();
   });
 }
-console.log(await app.listen({ port: Number(process.env.PORT ?? 0), host: '127.0.0.1' }));
+console.log(
+  await app.listen({
+    port: Number(process.env.PORT ?? 0),
+    host: process.env.HOST ?? '127.0.0.1',
+  }),
+);
