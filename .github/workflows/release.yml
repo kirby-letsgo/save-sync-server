@@ -1,6 +1,8 @@
 name: release
 # Publishes the server image and the in-memory test image a client app's tests pin. Clients should
-# pin the digest this prints, not the tag.
+# pin the digest this prints, not the tag. Both are built for amd64 and arm64: the runners are
+# amd64, but a client's tests are as likely to run on an arm64 laptop, and a pull with no matching
+# platform fails outright rather than falling back.
 on:
   push:
     tags: ['v*']
@@ -14,6 +16,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v5
+      # arm64 is cross-built on an amd64 runner, so the pnpm install in that leg runs emulated.
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -27,6 +31,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:${{ steps.version.outputs.v }}
@@ -37,11 +42,12 @@ jobs:
         with:
           context: .
           target: test
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ steps.version.outputs.v }}-test
       - name: The digest to pin
         run: |
-          echo "Pin this in a client's tests:" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pin this in a client's tests (the index digest, good on both platforms):" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "ghcr.io/${{ github.repository }}@${{ steps.test_image.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
