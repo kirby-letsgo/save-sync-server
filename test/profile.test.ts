@@ -28,6 +28,7 @@ describe('allowedFile', () => {
     expect(allowedFile(oracles, 'work', 'todo.md')).toBe(false);
     expect(allowedFile(notes, 'work', 'todo.md')).toBe(true);
     expect(allowedFile(notes, 'seasons', 'sram.sav')).toBe(false);
+    expect(allowedFile(oracles, 'ages-eu', 'sram.sav')).toBe(true);
   });
 
   it('keeps the shared namespace to its own files', () => {
