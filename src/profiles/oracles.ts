@@ -5,7 +5,7 @@ import type { Profile } from '../profile.js';
 // ROM-derived cache files (rom.bin, cyctab.bin).
 export const oracles: Profile = {
   name: 'oracles',
-  namespaces: ['ages', 'seasons'],
+  namespaces: ['ages', 'seasons', 'ages-eu', 'seasons-eu'],
   files: /^(sram\.sav|item_buttons|state_(?:[1-4]|auto)(?:\.thumb)?)$/,
   sharedNamespace: 'shared',
   sharedFiles: /^settings\.ini$/,
